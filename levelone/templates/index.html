@@ -1,0 +1,312 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>RPS Predictor</title>
+    <style>
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            font-family: 'SF Mono', 'Fira Code', 'Roboto Mono', 'Cascadia Code', 'Courier New', monospace;
+        }
+
+        body {
+            background-color: #0b0c0e;
+            color: #e1e4e8;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .container {
+            width: 100%;
+            max-width: 480px;
+            background: #121417;
+            border: 1px solid #22272e;
+            border-radius: 12px;
+            padding: 28px;
+            box-shadow: 0 8px 24px rgba(0, 0, 0, 0.4);
+        }
+
+        .header {
+            margin-bottom: 24px;
+        }
+
+        .header h1 {
+            font-size: 18px;
+            font-weight: 600;
+            color: #f0f6fc;
+            letter-spacing: -0.5px;
+        }
+
+        .header p {
+            font-size: 12px;
+            color: #768390;
+            margin-top: 4px;
+        }
+
+        /* Stats Bar */
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 8px;
+            background: #1c2128;
+            border: 1px solid #2d333b;
+            border-radius: 8px;
+            padding: 12px;
+            margin-bottom: 20px;
+        }
+
+        .stat-item {
+            text-align: center;
+        }
+
+        .stat-label {
+            font-size: 10px;
+            color: #768390;
+            text-transform: uppercase;
+            margin-bottom: 2px;
+        }
+
+        .stat-value {
+            font-size: 16px;
+            font-weight: 600;
+            color: #f0f6fc;
+        }
+
+        /* Controls */
+        .button-group {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 8px;
+            margin-bottom: 20px;
+        }
+
+        button {
+            background: #1c2128;
+            color: #adbac7;
+            border: 1px solid #373e47;
+            border-radius: 6px;
+            padding: 12px 8px;
+            font-size: 13px;
+            cursor: pointer;
+            transition: all 0.15s ease;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 4px;
+        }
+
+        button:hover {
+            background: #22272e;
+            border-color: #768390;
+            color: #f0f6fc;
+        }
+
+        button .key-hint {
+            font-size: 10px;
+            color: #636e7b;
+        }
+
+        /* Output / Feedback Section */
+        .feedback-card {
+            background: #1c2128;
+            border: 1px solid #2d333b;
+            border-radius: 8px;
+            padding: 16px;
+            margin-bottom: 20px;
+            min-height: 90px;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+        }
+
+        .feedback-row {
+            display: flex;
+            justify-content: space-between;
+            font-size: 13px;
+            margin-bottom: 6px;
+        }
+
+        .feedback-row:last-child {
+            margin-bottom: 0;
+        }
+
+        .label { color: #768390; }
+        .val { color: #adbac7; font-weight: 600; }
+        
+        .badge {
+            display: inline-block;
+            padding: 2px 6px;
+            border-radius: 4px;
+            font-size: 11px;
+            font-weight: 600;
+        }
+        .badge-win { background: rgba(46, 160, 67, 0.15); color: #57ab5a; }
+        .badge-loss { background: rgba(229, 83, 75, 0.15); color: #e5534b; }
+        .badge-tie { background: rgba(200, 150, 60, 0.15); color: #c8963c; }
+
+        /* History Log */
+        .history-title {
+            font-size: 11px;
+            color: #636e7b;
+            margin-bottom: 8px;
+            text-transform: uppercase;
+        }
+
+        .history-list {
+            max-height: 140px;
+            overflow-y: auto;
+            display: flex;
+            flex-direction: column;
+            gap: 4px;
+        }
+
+        .history-item {
+            font-size: 12px;
+            color: #768390;
+            padding: 6px 0;
+            border-bottom: 1px solid #22272e;
+            display: flex;
+            justify-content: space-between;
+        }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <div class="header">
+        <h1>rock-paper-scissors.ai</h1>
+        <p>markov pattern predictor // keybinds [1, 2, 3]</p>
+    </div>
+
+    <!-- Stats Bar -->
+    <div class="stats-grid">
+        <div class="stat-item">
+            <div class="stat-label">You</div>
+            <div class="stat-value" id="user-score">0</div>
+        </div>
+        <div class="stat-item">
+            <div class="stat-label">AI Win Rate</div>
+            <div class="stat-value" id="ai-rate">0%</div>
+        </div>
+        <div class="stat-item">
+            <div class="stat-label">AI</div>
+            <div class="stat-value" id="ai-score">0</div>
+        </div>
+    </div>
+
+    <!-- Buttons -->
+    <div class="button-group">
+        <button onclick="makeMove('rock')">
+            Rock
+            <span class="key-hint">[1]</span>
+        </button>
+        <button onclick="makeMove('paper')">
+            Paper
+            <span class="key-hint">[2]</span>
+        </button>
+        <button onclick="makeMove('scissors')">
+            Scissors
+            <span class="key-hint">[3]</span>
+        </button>
+    </div>
+
+    <!-- Latest Result Feedback -->
+    <div class="feedback-card" id="feedback">
+        <div style="text-align: center; color: #636e7b; font-size: 13px;">
+            Select a move to start training model...
+        </div>
+    </div>
+
+    <!-- Compact Log -->
+    <div class="history-title">Activity Log</div>
+    <div class="history-list" id="history"></div>
+</div>
+
+<script>
+    let userScore = 0;
+    let aiScore = 0;
+
+    // Keyboard support
+    document.addEventListener('keydown', (e) => {
+        if (e.key === '1') makeMove('rock');
+        if (e.key === '2') makeMove('paper');
+        if (e.key === '3') makeMove('scissors');
+    });
+
+    async function makeMove(userMove) {
+        const response = await fetch('/play', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ move: userMove })
+        });
+
+        const data = await response.json();
+        updateUI(data);
+    }
+
+    function updateUI(data) {
+        let resultBadge = "";
+        
+        // Evaluate winner
+        if (data.user_move === data.computer_move) {
+            resultBadge = `<span class="badge badge-tie">TIE</span>`;
+        } else if (
+            (data.user_move === 'rock' && data.computer_move === 'scissors') ||
+            (data.user_move === 'paper' && data.computer_move === 'rock') ||
+            (data.user_move === 'scissors' && data.computer_move === 'paper')
+        ) {
+            resultBadge = `<span class="badge badge-win">YOU WIN</span>`;
+            userScore++;
+        } else {
+            resultBadge = `<span class="badge badge-loss">AI WINS</span>`;
+            aiScore++;
+        }
+
+        // Winrate Calculation
+        let total = userScore + aiScore;
+        let rate = total > 0 ? Math.round((aiScore / total) * 100) : 0;
+
+        document.getElementById('user-score').innerText = userScore;
+        document.getElementById('ai-score').innerText = aiScore;
+        document.getElementById('ai-rate').innerText = `${rate}%`;
+
+        // Update Feedback Card
+        document.getElementById('feedback').innerHTML = `
+            <div class="feedback-row">
+                <span class="label">Result</span>
+                <div>${resultBadge}</div>
+            </div>
+            <div class="feedback-row">
+                <span class="label">You Played</span>
+                <span class="val">${data.user_move}</span>
+            </div>
+            <div class="feedback-row">
+                <span class="label">AI Predicted</span>
+                <span class="val">${data.predicted_user_move}</span>
+            </div>
+            <div class="feedback-row">
+                <span class="label">AI Played</span>
+                <span class="val">${data.computer_move}</span>
+            </div>
+        `;
+
+        // Add to history list
+        const historyList = document.getElementById('history');
+        const item = document.createElement('div');
+        item.className = 'history-item';
+        item.innerHTML = `
+            <span>You: ${data.user_move} | AI: ${data.computer_move}</span>
+            <span>Pred: ${data.predicted_user_move}</span>
+        `;
+        historyList.insertBefore(item, historyList.firstChild);
+    }
+</script>
+
+</body>
+</html>

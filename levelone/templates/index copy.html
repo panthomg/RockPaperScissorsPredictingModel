@@ -1,0 +1,91 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Rock Paper Scissors AI</title>
+    <style>
+        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background: #1a1a2e; color: #fff; text-align: center; padding: 20px; }
+        .container { max-width: 600px; margin: 0 auto; background: #16213e; padding: 20px; border-radius: 12px; box-shadow: 0 4px 15px rgba(0,0,0,0.5); }
+        .buttons { margin: 20px 0; }
+        button { background: #0f3460; color: #fff; border: 2px solid #e94560; padding: 15px 25px; margin: 5px; border-radius: 8px; cursor: pointer; font-size: 16px; transition: 0.2s; }
+        button:hover { background: #e94560; }
+        .dashboard { display: flex; justify-content: space-around; background: #0f3460; padding: 15px; border-radius: 8px; margin-top: 20px; }
+        .stat-box { font-size: 18px; }
+        .result-box { margin-top: 20px; background: #0f3460; padding: 15px; border-radius: 8px; font-size: 18px; line-height: 1.6; }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <h1>AI Rock Paper Scissors Game</h1>
+    <p>Press keys <b>1</b> (Rock), <b>2</b> (Paper), <b>3</b> (Scissors) or click the buttons!</p>
+
+    <div class="buttons">
+        <button onclick="makeMove('rock')">🪨 Rock (1)</button>
+        <button onclick="makeMove('paper')">📄 Paper (2)</button>
+        <button onclick="makeMove('scissors')">✂️ Scissors (3)</button>
+    </div>
+
+    <div class="dashboard">
+        <div class="stat-box">Player: <span id="player-wins">0</span></div>
+        <div class="stat-box">AI: <span id="ai-wins">0</span></div>
+    </div>
+
+    <div class="result-box" id="result">
+        Play a move to start!
+    </div>
+</div>
+
+<script>
+    let playerWins = 0;
+    let aiWins = 0;
+
+    // Keyboard controls (1, 2, 3)
+    document.addEventListener('keydown', function(event) {
+        if (event.key === '1') makeMove('rock');
+        if (event.key === '2') makeMove('paper');
+        if (event.key === '3') makeMove('scissors');
+    });
+
+    async function makeMove(userMove) {
+        let response = await fetch('/play', {
+            method: "POST",
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ move: userMove })
+        });
+
+        let data = await response.json();
+
+        // Check Winner
+        let outcome = "";
+        if (data.user_move === data.computer_move) {
+            outcome = "🤝 It's a Tie!";
+        } else if (
+            (data.user_move === 'rock' && data.computer_move === 'scissors') ||
+            (data.user_move === 'paper' && data.computer_move === 'rock') ||
+            (data.user_move === 'scissors' && data.computer_move === 'paper')
+        ) {
+            outcome = "🎉 You Win!";
+            playerWins++;
+        } else {
+            outcome = "🤖 AI Wins!";
+            aiWins++;
+        }
+
+        // Update Stats
+        document.getElementById('player-wins').innerText = playerWins;
+        document.getElementById('ai-wins').innerText = aiWins;
+
+        // Update Result Display
+        document.getElementById('result').innerHTML = `
+            <b>${outcome}</b><br><br>
+            You Played: <b>${data.user_move}</b><br>
+            AI Predicted You'd Play: <b>${data.predicted_user_move}</b><br>
+            AI Played: <b>${data.computer_move}</b>
+        `;
+    }
+</script>
+
+</body>
+</html>
